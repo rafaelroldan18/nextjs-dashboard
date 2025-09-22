@@ -1,21 +1,37 @@
-import type { NextAuthConfig } from 'next-auth';
- 
+// auth.config.ts
+import type { NextAuthConfig } from 'next-auth'
+import type { NextRequest } from 'next/server'
+import type { Session } from 'next-auth'
+import { NextResponse } from 'next/server'
+
+type AuthorizedArgs = {
+  auth: Session | null
+  request: NextRequest
+}
+
 export const authConfig = {
   pages: {
     signIn: '/login',
   },
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
+    authorized({ auth, request }: AuthorizedArgs) {
+      const { nextUrl } = request
+      const isLoggedIn = !!auth?.user
+      const isOnDashboard = nextUrl.pathname.startsWith('/dashboard')
+
       if (isOnDashboard) {
-        if (isLoggedIn) return true;
-        return false; // Redirect unauthenticated users to login page
-      } else if (isLoggedIn) {
-        return Response.redirect(new URL('/dashboard', nextUrl));
+        // Solo entra si está logueado
+        return isLoggedIn
       }
-      return true;
+
+      // Si ya está logueado y está fuera del dashboard, redirige al dashboard
+      if (isLoggedIn) {
+        return NextResponse.redirect(new URL('/dashboard', nextUrl))
+      }
+
+      // Resto de rutas públicas: permitir
+      return true
     },
   },
-  providers: [], // Add providers with an empty array for now
-} satisfies NextAuthConfig;
+  providers: [], // agrega tus providers cuando los tengas
+} satisfies NextAuthConfig
